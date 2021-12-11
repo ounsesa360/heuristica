@@ -120,32 +120,30 @@ def not_floating(*args):
 	return True
 
 def not_reorganizing(*args):
-	# we need the container list to get an aux array with the port data
-	# since both arrays (args and container) have the same order we don't need to modify any of them to do the calc
 	print(args)
 	for i in range(len(args)):
-		# for every container check if order is clear
 		for j in range(len(args)):
-			# if both are located in the same column
 			column = args[i][0]
 			other_column = args[j][0]
 			if i != j and column == other_column:
-				# check for port id and proceed
-				# if both have the same port, it doesn't matter the order
 				puerto = containers_map[i][2]
 				id = containers_map[i][0]
 				other_puerto = containers_map[j][2]
 				other_id = containers_map[j][0]
 				#SI PUERTO I > PUERTO J
 				if puerto > other_puerto:
-					# check order based on port id
-					# if i has lower placing then j it's all fine
 					row = args[i][1]
 					other_row = args[j][1]
 					#QUEREMOS QUE LA FILA I ESTÉ DEBAJO DE J
 					if row < other_row:
 						return False
 	return True
+
+def get_containers_id(containers_map):
+	container_id_list = []
+	for i in containers_map:
+		container_id_list.append(i[0])
+	return container_id_list
 
 
 def add_domains(regular_containers, refrigerate_containers, available_regular_pos, available_refrigerate_pos):
@@ -185,6 +183,7 @@ mapa = get_map(sys.argv[1], sys.argv[2])
 modified_map = convert_position_matrix(mapa)
 global containers_map
 containers_map = get_containers(sys.argv[1], sys.argv[3])
+container_id_list = get_containers_id(containers_map)
 regular_containers = get_regular_containers(containers_map)
 refrigerate_containers = get_refrigerate_containers(containers_map)
 available_regular_pos, available_refrigerate_pos = get_available_position(modified_map)
@@ -192,16 +191,12 @@ add_domains(regular_containers, refrigerate_containers, available_regular_pos, a
 get_floor(modified_map)
 print_data()
 
-container_id_list = []
-for container in regular_containers:
-	container_id_list.append(container[0])
-for container in refrigerate_containers:
-	container_id_list.append(container[0])
 problem.addConstraint(AllDifferentConstraint(), container_id_list)
 problem.addConstraint(not_floating,container_id_list)
+print(problem.getSolutions())
 problem.addConstraint(not_reorganizing,container_id_list)
 print("Sacamos solución")
-print(len(problem.getSolutions()))
+print(problem.getSolutions())
 
 # o todas las soluciones:
 
