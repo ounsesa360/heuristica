@@ -122,17 +122,18 @@ def not_floating(*args):
 
 def not_reorganizing(*args):
 	containers = list(args)
-	print(containers)
 	for i in containers:
-		cond = False
-		row = i[0]
-		column = i[1]
-		print(containers_map[containers.index(i)])
-		print("a")
-		for k in containers:
-			if i != k:
-				if containers_map[containers.index(i)][2] == 2:
-					pass
+		if containers_map[containers.index(i)][2] == '2':
+			row = i[0]
+			column = i[1]
+			for k in containers:
+				if i != k:
+					other_row = k[0]
+					other_column = k[1]
+					if column == other_column and other_row == row + 1:
+						if containers_map[containers.index(k)][2] == '1':
+							return False
+	return True
 
 
 def add_domains(regular_containers, refrigerate_containers, available_regular_pos, available_refrigerate_pos):
@@ -167,7 +168,6 @@ def print_data():
 	print("Posiciones disponibles cont. refrigerados")
 	for i in range(len(available_refrigerate_pos)):
 		print(available_refrigerate_pos[i])
-	print(containers_map)
 
 mapa = get_map(sys.argv[1], sys.argv[2])
 modified_map = convert_position_matrix(mapa)
@@ -189,7 +189,7 @@ problem.addConstraint(AllDifferentConstraint(), container_id_list)
 problem.addConstraint(not_floating,container_id_list)
 problem.addConstraint(not_reorganizing,container_id_list)
 print("Sacamos solución")
-print(problem.getSolutions())
+print(len(problem.getSolutions()))
 
 # o todas las soluciones:
 
@@ -202,7 +202,6 @@ print(problem.getSolutions())
 """problem.addVariables(['A', 'Y', 'R', 'F'], [1, 2, 3])
 problem.addVariable('J', [2, 3])
 problem.addVariable('M', [3])
-
 # A continuacion se anyaden las restricciones del problema mediante la funcion addConstraint proporcionada por la libreria
 #
 # Ejemplos:
@@ -219,42 +218,24 @@ problem.addVariable('M', [3])
 # En este caso vamos a modelar en primer lugar la restriccion de que Alfredo y Ruben no quieren trabajar juntos, es decir,
 # RA,R = [(1,2),(1,3),(2,1),(2,3),(3,1),(3,2)]. Se puede hacer de varias formas. Una de ellas es definir una funcion, por ejemplo,
 # notEqual, que compruebe que el valor de una variable es diferente de la de la otra:
-
 def notEqual(a, b):
 	if a != b:
 		return True
-
 problem.addConstraint(notEqual, ('A', 'R'))
-
 # Tambien se puede crear una funcion lambda para hacer esta comprobacion:
-
 problem.addConstraint(lambda a, b: a != b, ('A', 'R'))
-
-
 # Por ultimo, la libreria ofrece la funcion AllDifferentConstraint que precisamente comprueba que el valor de una variable es diferente a las de las otras:
-
 problem.addConstraint(AllDifferentConstraint(), ['A', 'R'])
-
 # Lo anterior, son tres formas diferentes de modelar la misma restriccion RA,R = [(1,2),(1,3),(2,1),(2,3),(3,1),(3,2)]
 # Ahora modelamos la restriccion de que Ruben y Felisa quieren trabajar en la misma parte RR,F={(1,1),(2,2),(3,3)}
-
 problem.addConstraint(lambda a, b: a == b, ('R', 'F'))
-
-
 # Por ultimo, modelamos la restriccion de que Yara hace una parte posterior a la que haga Ruben, RR,Y={(1,2),(1,3),(2,3)}
-
 def consecutive(a, b):
 	if b > a:
 		return True
-
 problem.addConstraint(consecutive, ('R', 'Y'))
-
 # Una vez modelado el problema, podemos recuperar una de las soluciones:
-
 print(problem.getSolution())
-
 # o todas las soluciones:
-
 print(problem.getSolutions())
-
 """
