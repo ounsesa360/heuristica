@@ -1,6 +1,5 @@
 from constraint import *
 import sys
-
 problem = Problem()
 
 # Se anyaden las variables al problema. Existen diferentes formas de hacerlo mediante las funciones addVariable y addVariables
@@ -80,6 +79,14 @@ def convert_position_matrix(position_matrix):
 					position_matrix[k][j] = "X"
 	return position_matrix
 
+def get_floor(map):
+	global floor
+	floor = []
+	for i in range(len(map)):
+		for j in range(len(map[0])):
+			if map[i][j] == "F":
+				floor.append((i, j))
+	return floor
 
 def get_available_position(map):
 	available_regular_pos = []
@@ -93,6 +100,39 @@ def get_available_position(map):
 				available_refrigerate_pos.append((i, j))
 	return available_regular_pos, available_refrigerate_pos
 
+def not_floating(*args):
+	containers = list(args)
+	for i in containers:
+		cond = False
+		row = i[0]
+		column = i[1]
+		if (row+1,column) in floor:
+			cond = True
+		else:
+			for k in containers:
+				if i != k:
+					other_row = k[0]
+					other_column = k[1]
+					if column == other_column and other_row == row + 1:
+						cond = True
+						break
+			if not cond:
+				return False
+	return True
+
+def not_reorganizing(*args):
+	containers = list(args)
+	print(containers)
+	for i in containers:
+		cond = False
+		row = i[0]
+		column = i[1]
+		print(containers_map[containers.index(i)])
+		print("a")
+		for k in containers:
+			if i != k:
+				if containers_map[containers.index(i)][2] == 2:
+					pass
 
 
 def add_domains(regular_containers, refrigerate_containers, available_regular_pos, available_refrigerate_pos):
@@ -127,14 +167,17 @@ def print_data():
 	print("Posiciones disponibles cont. refrigerados")
 	for i in range(len(available_refrigerate_pos)):
 		print(available_refrigerate_pos[i])
+	print(containers_map)
 
 mapa = get_map(sys.argv[1], sys.argv[2])
 modified_map = convert_position_matrix(mapa)
+global containers_map
 containers_map = get_containers(sys.argv[1], sys.argv[3])
 regular_containers = get_regular_containers(containers_map)
 refrigerate_containers = get_refrigerate_containers(containers_map)
 available_regular_pos, available_refrigerate_pos = get_available_position(modified_map)
 add_domains(regular_containers, refrigerate_containers, available_regular_pos, available_refrigerate_pos)
+get_floor(modified_map)
 print_data()
 
 container_id_list = []
@@ -143,7 +186,10 @@ for container in regular_containers:
 for container in refrigerate_containers:
 	container_id_list.append(container[0])
 problem.addConstraint(AllDifferentConstraint(), container_id_list)
-print(problem.getSolution())
+problem.addConstraint(not_floating,container_id_list)
+problem.addConstraint(not_reorganizing,container_id_list)
+print("Sacamos solución")
+print(problem.getSolutions())
 
 # o todas las soluciones:
 
