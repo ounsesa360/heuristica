@@ -85,7 +85,7 @@ def get_floor(map):
 	for i in range(len(map)):
 		for j in range(len(map[0])):
 			if map[i][j] == "F":
-				floor.append((i, j))
+				floor.append((j, i))
 	return floor
 
 def get_available_position(map):
@@ -94,45 +94,57 @@ def get_available_position(map):
 	for i in range (len(map)):
 		for j in range (len(map[0])):
 			if map[i][j] == "N":
-				available_regular_pos.append((i, j))
+				available_regular_pos.append((j, i))
 			if map[i][j] == "E":
-				available_regular_pos.append((i, j))
-				available_refrigerate_pos.append((i, j))
+				available_regular_pos.append((j, i))
+				available_refrigerate_pos.append((j, i))
 	return available_regular_pos, available_refrigerate_pos
 
 def not_floating(*args):
 	containers = list(args)
 	for i in containers:
 		cond = False
-		row = i[0]
-		column = i[1]
-		if (row+1,column) in floor:
-			cond = True
-		else:
+		row = i[1]
+		column = i[0]
+		if (column,row+1) not in floor:
 			for k in containers:
 				if i != k:
-					other_row = k[0]
-					other_column = k[1]
-					if column == other_column and other_row == row + 1:
-						cond = True
-						break
+					other_row = k[1]
+					other_column = k[0]
+					if column == other_column:
+						if other_row == row + 1:
+							cond = True
+							break
 			if not cond:
 				return False
 	return True
 
 def not_reorganizing(*args):
-	containers = list(args)
-	for i in containers:
-		if containers_map[containers.index(i)][2] == '2':
-			row = i[0]
-			column = i[1]
-			for k in containers:
-				if i != k:
-					other_row = k[0]
-					other_column = k[1]
-					if column == other_column and other_row == row + 1:
-						if containers_map[containers.index(k)][2] == '1':
-							return False
+	# we need the container list to get an aux array with the port data
+	# since both arrays (args and container) have the same order we don't need to modify any of them to do the calc
+	print(args)
+	for i in range(len(args)):
+		# for every container check if order is clear
+		for j in range(len(args)):
+			# if both are located in the same column
+			column = args[i][0]
+			other_column = args[j][0]
+			if i != j and column == other_column:
+				# check for port id and proceed
+				# if both have the same port, it doesn't matter the order
+				puerto = containers_map[i][2]
+				id = containers_map[i][0]
+				other_puerto = containers_map[j][2]
+				other_id = containers_map[j][0]
+				#SI PUERTO I > PUERTO J
+				if puerto > other_puerto:
+					# check order based on port id
+					# if i has lower placing then j it's all fine
+					row = args[i][1]
+					other_row = args[j][1]
+					#QUEREMOS QUE LA FILA I ESTÉ DEBAJO DE J
+					if row < other_row:
+						return False
 	return True
 
 
