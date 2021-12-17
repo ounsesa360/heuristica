@@ -11,6 +11,14 @@ class DoubleLinkList:
         self.tail = None
         self.len = 0
 
+    def __str__(self):
+        node = self.head
+        res = ""
+        while node.next:
+            res += str(node.value)
+            node = node.next
+        return res
+
     def add_item(self, element):
         new_node = Node(element)
         if self.head is None:
@@ -31,13 +39,14 @@ class DoubleLinkList:
             node = self.head
             self.head = None
             self.tail = None
-            return node
+            self.len -= 1
+            return node.value
         else:
             node = self.head
             node.next.prev = None
             self.head = self.head.next
             self.len -= 1
-            return node
+            return node.value
 
     def isEmpty(self):
         if self.len == 0:

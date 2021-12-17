@@ -1,23 +1,39 @@
 class Node:
-    def __init__(self, value=None,state=None):
+    def __init__(self, heur=None,cost=None,state=None):
         self.next = None
         self.prev = None
-        self.value = value
+        self.heur = heur
+        self.cost = cost
+        self.value = self.heur + self.cost
         self.state = state
+
+class State:
+
+    def __init__(self, port=0, pos_containers={}):
+        self.port = port
+        self.pos_containers = pos_containers
+
+    def __str__(self):
+        return "Puerto: " + str(self.port) + "\nContenedores: " + str(self.pos_containers)
+
+    def __repr__(self):
+        return self.__str__() ###############################
 
 
 class PriorityQueue:
 
     def __init__(self):
         self.head = None
-        self.tail = None
+        self.tail = None ##############dudoso
         self.len = 0
 
+
+
     def add_item(self, element):
-        new_node = Node(element.cost + element.heur,element.value)
+        new_node = Node(element.heur,element.cost,element.value)
         if self.head is None:
             self.head = new_node
-            self.tail = new_node
+            self.tail = new_node ##############dudoso
             self.len += 1
         else:
             node = self.head
@@ -29,7 +45,8 @@ class PriorityQueue:
                     # El previo del nuevo nodo será el antiguo previo del nodo en el que estamos iterando
                     new_node.prev = node.prev
                     # Que el nodo previo al que recorremos apunte al nuevo nodo
-                    node.prev.next = new_node
+                    if node.prev:
+                        node.prev.next = new_node
                     # Que el nodo sobre el que iteramos apunte con su prev al nuevo nodo
                     node.prev = new_node
                     if self.head == node:
@@ -39,8 +56,8 @@ class PriorityQueue:
 
                 elif node.next is None:
                     node.next = new_node
-                    new_node.prev = node.next
-                    self.tail = new_node
+                    new_node.prev = node
+                    self.tail = new_node ##############dudoso
                     self.len += 1
                     return
                 node = node.next
@@ -67,6 +84,7 @@ class PriorityQueue:
             node = self.head
             self.head = None
             self.tail = None
+            self.len -= 1
             return node
         else:
             node = self.head
