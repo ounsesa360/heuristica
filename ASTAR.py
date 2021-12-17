@@ -5,6 +5,7 @@ import sys
 global MAP
 global INITIAL_PORT
 global PORTS
+global expanded_nodes
 # PORTS[0] = lista de contenedores en el puerto 0, del estado inicial todos los que hay que cargar
 # PORTS[1] = lista de contenedores en el puerto 1, son los contenedores del puerto 2 que han sido recolocados
 # Los contenedores del puerto 1 que se descarguen en este pueden ser descartados ya del problema
@@ -52,8 +53,15 @@ class ASTAR:
         while not self.node_list.isEmpty():
             print("\n\nIteración " + str(i))
             expanding_node = self.node_list.remove_first()
-            expanding_node = Node(expanding_node.state.port,expanding_node.state.pos_containers)
-            new_node_list = get_children(expanding_node)
+            if expanding_node.heur == 0:
+                return
+            print("Estado actual y coste")
+            print(expanding_node.state)
+            print("Coste: " + str(expanding_node.cost))
+            print("Heurística: " + str(expanding_node.heur))
+            exp = Node(expanding_node.state.pos_containers,expanding_node.state.port)
+            exp.cost = expanding_node.cost
+            new_node_list = get_children(exp)
             for node in new_node_list:
                 print("Nuevo nodo: ")
                 print(node.cost)
@@ -98,6 +106,8 @@ def get_children(node):
     if port_dll.isEmpty():
         print("Navegamos")
         new_node_list += navegar(node)
+
+    expanded_nodes += len(new_node_list)
     return new_node_list
 ########################################################################################################################
 
@@ -209,7 +219,8 @@ def no_charging_cost_heuristic(node):
         if node.value.port > max_port:
             max_port = node.value.port
         # Obtenemos la altura de cada contenedor para calcular el coste que supondría descargarlo
-        height = len(MAP) - node.value.pos_containers[key][0]
+        # Importante, posiblemente haya que calcular el coste de descarga de todos los container que no están en su puero tambien
+        height = len(MAP) - node.state.pos_containers[key][0]
         discharge_cost = 15 + 2 * height
         value += discharge_cost
     navigation_costs = (max_port - node.value.port) * 3500
@@ -288,6 +299,7 @@ initial_containers = get_containers(sys.argv[1], sys.argv[3])
 initial_config = get_initial_configuration(initial_containers)
 for container in initial_containers:
     initial_port.add_item(container)
+expanded_nodes = 0
 first_port = DoubleLinkList()
 second_port = DoubleLinkList()
 PORTS = [initial_port, first_port, second_port]
