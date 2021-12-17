@@ -1,5 +1,8 @@
-from PriorityQueue import Node
-
+class Node:
+    def __init__(self, value=None):
+        self.next = None
+        self.prev = None
+        self.value = value
 
 class DoubleLinkList:
 
@@ -20,16 +23,23 @@ class DoubleLinkList:
         self.len += 1
         return
 
-    def remove_item(self, element):
+    def remove_first(self):
         if self.head is None:
             print("No puedes borrar de una lista vacía, estupido")
             return
+        elif self.len == 1:
+            node = self.head
+            self.head = None
+            self.tail = None
+            return node
         else:
             node = self.head
-            while True:
-                if node.value == element:
-                    node.prev.next = node.next
-                    node.next.prev = node.prev
-                    self.len -= 1
-                    return node
-                node = node.next
+            node.next.prev = None
+            self.head = self.head.next
+            self.len -= 1
+            return node
+
+    def isEmpty(self):
+        if self.len == 0:
+            return True
+        return False

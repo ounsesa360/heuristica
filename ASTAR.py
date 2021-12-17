@@ -4,8 +4,11 @@ import sys
 
 global MAP
 global INITIAL_PORT
-global PORTS = ["Lista de containers del puerto 0", "Lista de containers del puerto 1", "Lista de containers del puerto 2"]
-
+global PORTS
+# PORTS[0] = lista de contenedores en el puerto 0, del estado inicial todos los que hay que cargar
+# PORTS[1] = lista de contenedores en el puerto 1, son los contenedores del puerto 2 que han sido recolocados
+# Los contenedores del puerto 1 que se descarguen en este pueden ser descartados ya del problema
+# PORTS[2] no sé para qué existe
 
 class Node:
 
@@ -15,12 +18,18 @@ class Node:
         self.cost = 0
         self.heur = 0
 
+    def __str__(self):
+        return self.value
+
 
 class State:
 
     def __init__(self, port=0, pos_containers={}):
         self.port = port
         self.pos_containers = pos_containers
+
+    def __str__(self):
+        return "Puerto: " + str(self.port) + "\nContenedores: " + str(self.pos_containers)
 
 
 class ASTAR:
@@ -35,42 +44,74 @@ class ASTAR:
     def search(self):
         # Mientras haya nodos que expandir
         self.current.heuristic = same_height_heuristic(self.current)
+        print(self.current.heuristic)
         self.node_list.add_item(self.current)
         while not self.node_list.isEmpty():
             expanding_node = self.node_list.remove_first()
-            expanding_node = Node(expanding_node.value)
-            # Aplicamos operadores según precondiciones
-            port_dll = PORTS[expanding_node.value.port]
-            if not port_dll.isEmpty():
-                container = port_dll.remove_first()
-                new_node_list = cargar(expanding_node,container)
-                for new_node in new_node_list:
-                    self.node_list.add_item(new_node)
-
-            if len(expanding_node.value.pos_containers) != 0:
-                descargar()
-            if PRECOND:
-                navegar()
+            expanding_node = Node(expanding_node.state.port,expanding_node.state.pos_containers)
+            new_node_list = get_children(expanding_node)
+            for node in new_node_list:
+                self.node_list.add_item(node)
 
 
-def navegar():
-    # Que la lista del puerto 0 esté vacía
-    # if self.state.port == 0:
-    if current.value.port == 1:
-        for container in current.value.pos_containers:
-            if current.value.pos_containers[container][2] == 1:
-                return False
-    # Que si en puerto 1, no navegar y dejar atrás contenedores del puerto 2
 
-    if 0 <= current.value.port < 2:
-        current.value.port += 1
-        current.cost += 3500
-        return True
-    return False
+def get_children(node):
+    new_node_list = []
+    # Aplicamos operadores según precondiciones
+    port_dll = PORTS[node.value.port]
+    # Si no hay contenedores en el puerto, no se pueden cargar
+    if not port_dll.isEmpty():
+        # Si los hay, cogemos el primero para cargarlo
+        container = port_dll.remove_first()
+        # Sacamos los posibles nodos que se generan al cargarlo
+        # en las distintas posiciones posibles
+        new_node_list += cargar(node, container)
+        # Y lo añadimos a la lista de nuevos nodos
+        #for new_node in new_node_list:
+        #    new_node_list.append(new_node)
+
+    # Si no hay contenedores en el barco, no se puede descargar
+    if len(node.value.pos_containers) != 0:
+        new_node_list += descargar(node)
+    # Si el puerto está vacio
+    # También hay que comprobar que el barco no tenga elementos de ese puerto
+    if port_dll.isEmpty():
+        new_node_list += navegar(node)
+    return new_node_list
+
+
+def navegar(node):
+    # Que no pueda navegar si tiene contenedores que dejar en ese puerto
+    for container in node.value.pos_containers:
+        if node.value.pos_containers[container][2] == node.value.port:
+            return []
+    new_node = Node(node.value.port + 1, node.value.pos_containers)
+    new_node.cost = node.cost + 3500
+    new_node.heur = same_height_heuristic(new_node)
+    new_node.parent = node
+    return [new_node]
+
+def descargar(node):
+    # Cogemos el último container que se ha insertado en el barco
+    container = node.value.pos_containers.popitem()
+    # Si coincide con el puerto al que tiene que ir
+    if container[1][2] == node.value.port:
+        # Se ha entregado bien, haremos sus operaciones correspondientes
+        pass
+    else:
+        # Va a ser recolocado, lo insertamos en el puerto para luego volver a cargarlo
+        PORTS[node.value.port].add_item(container)
+    new_node = Node(node.value.port,node.value.pos_containers)
+    new_node.cost = node.cost + 15 + 2 * (len(MAP)-container[1][0])
+    new_node.heur = same_height_heuristic(node)
+    new_node.parent = node
+    return [new_node]
+
 
 def cargar(node,container):
     # Añadimos al Node.pos_containers el container colocado
     new_pos_containers = node.value.pos_containers
+    print(container) #######################################
     available_pos_list = set_container(new_pos_containers)
     new_node_list = []
     for new_pos in available_pos_list:
@@ -82,8 +123,10 @@ def cargar(node,container):
         new_node.parent = node
         new_node_list.append(new_node)
 
-    # Devolvemos el nodo
+    # Devolvemos la lista de nodos
     return new_node_list
+
+
 
 def set_container(pos_containers):
     map = MAP
@@ -100,25 +143,21 @@ def set_container(pos_containers):
 
 
 
-def descargar(container):
-    if self.state.port == 0:
-        return False
-
 def same_height_heuristic(node):
-    # El coste de altura es constante (10)
+    # No hay coste adicional por altura
     heur = 0
     # Buscamos hasta que puerto tendremos que ir para los costes de navegación
     max_port = 0
-    for i in INITIAL_PORT:
-        if int(i[2]) > max_port:
-            max_port = int(i[2])
+    # En este caso los node.value tienen la estrcutura de [id,tipo,puerto]
+    containers_list = PORTS[node.value.port]
+    aux_node = containers_list.head
+    while aux_node.next:
+        if int(aux_node.value[2]) > max_port:
+            max_port = int(aux_node.value[2])
+        aux_node = aux_node.next
     heur += max_port*3500
     # Cargamos todos los contenedores con su coste
-    heur += len(INITIAL_PORT)*10
-    # Calculamos lo que costaría descargar todos los contenedores
-    for container in node.value.pos_containers:
-        height = len(MAP) - node.value.pos_containers[container][0]
-        heur += 15 + 2 * height
+    heur += containers_list.len * 25
     return heur
 
 
@@ -199,4 +238,14 @@ def convert_position_matrix(position_matrix):
 map = get_map(sys.argv[1],sys.argv[2])
 modified_map = convert_position_matrix(map)
 MAP = modified_map
-INITIAL_PORT = get_containers(sys.argv[1], sys.argv[3])
+initial_port = DoubleLinkList()
+initial_containers = get_containers(sys.argv[1], sys.argv[3])
+for container in initial_containers:
+    initial_port.add_item(container)
+first_port = DoubleLinkList()
+PORTS = [initial_port,first_port]
+
+sol = ASTAR(1)
+sol.search()
+
+

@@ -1,8 +1,9 @@
 class Node:
-    def __init__(self, value=None):
+    def __init__(self, value=None,state=None):
         self.next = None
         self.prev = None
         self.value = value
+        self.state = state
 
 
 class PriorityQueue:
@@ -13,7 +14,7 @@ class PriorityQueue:
         self.len = 0
 
     def add_item(self, element):
-        new_node = Node(element)
+        new_node = Node(element.cost + element.heur,element.value)
         if self.head is None:
             self.head = new_node
             self.tail = new_node
@@ -62,6 +63,11 @@ class PriorityQueue:
         if self.head is None:
             print("No puedes borrar de una lista vacía, estupido")
             return
+        elif self.len == 1:
+            node = self.head
+            self.head = None
+            self.tail = None
+            return node
         else:
             node = self.head
             node.next.prev = None
