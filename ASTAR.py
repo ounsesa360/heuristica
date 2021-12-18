@@ -53,12 +53,12 @@ class ASTAR:
         while not self.node_list.isEmpty():
             print("\n\nIteración " + str(i))
             expanding_node = self.node_list.remove_first()
-            if expanding_node.heur == 0:
-                return
             print("Estado actual y coste")
             print(expanding_node.state)
             print("Coste: " + str(expanding_node.cost))
             print("Heurística: " + str(expanding_node.heur))
+            if expanding_node.heur == 0:
+                return
             exp = Node(expanding_node.state.pos_containers,expanding_node.state.port)
             exp.cost = expanding_node.cost
             new_node_list = get_children(exp)
@@ -68,6 +68,7 @@ class ASTAR:
                 print(node.value)
                 self.node_list.add_item(node)
             i += 1
+        print("Si llega hasta aquí no ha encontrado solución")
 
 
 def get_possible_charged(node):
@@ -83,33 +84,29 @@ def get_children(node):
     expanded_nodes = 0
     # Aplicamos operadores según precondiciones
     # De primeras, vemos si hay algun contenedor en el puerto en el que estamos
-    print(node.value.port)
     possible_charged = get_possible_charged(node)
-    print(possible_charged)
     # Si no hay contenedores en el puerto, no se pueden cargar
     if len(possible_charged) != 0:
         # Si los hay, cogemos el primero para cargarlo
-        container = possible_charged.pop(-1)
-        print(container)
-        # Sacamos los posibles nodos que se generan al cargarlo
-        # en las distintas posiciones posibles
-        print("Cargamos")
-        new_node_list += cargar(node, container)
+        for container in possible_charged:
+            # Sacamos los posibles nodos que se generan al cargarlo
+            # en las distintas posiciones posibles
+            print("Cargamos")
+            new_node_list += cargar(node, container)
 
-########################################################################################################################
     # Si no hay contenedores en el barco, no se puede descargar
-    if len(node.value.pos_containers) != 0:
+    if containers_in_boat(node.value.pos_containers):
         print("Descargamos")
         new_node_list += descargar(node)
+
     # Si el puerto está vacio
     # También hay que comprobar que el barco no tenga elementos de ese puerto
-    if port_dll.isEmpty():
+    if no_containers_in_port(node):
         print("Navegamos")
         new_node_list += navegar(node)
 
     expanded_nodes += len(new_node_list)
     return new_node_list
-########################################################################################################################
 
 def navegar(node):
     # Que no pueda navegar si tiene contenedores que dejar en ese puerto
@@ -124,22 +121,32 @@ def navegar(node):
 
 def descargar(node):
     # Cogemos el último container que se ha insertado en el barco
-    container = node.value.pos_containers.popitem()
-    container_height = len(MAP) - container[1][0]
-    # Si coincide con el puerto al que tiene que ir
-    if container[1][2] == node.value.port:
-        # Se ha entregado bien, haremos sus operaciones correspondientes
-        pass
-    else:
-        # Va a ser recolocado, lo insertamos en el puerto para luego volver a cargarlo
-        container = [container[0],container[1][3],container[1][2]]
-        print(container)
-        PORTS[node.value.port].add_item(container)
-    new_node = Node(node.value.pos_containers, node.value.port)
-    new_node.cost = node.cost + 15 + 2 * container_height
-    new_node.heur = same_height_heuristic(new_node)
-    new_node.parent = node
-    return [new_node]
+    new_pos_containers = node.value.pos_containers.copy()
+    possible_discharged = []
+    for container in new_pos_containers:
+        if not isinstance(new_pos_containers[container][0], int):
+            pos = new_pos_containers[container][0]
+            cond = True
+            for other_container in new_pos_containers:
+                if other_container != container:
+                    if not isinstance(new_pos_containers[other_container][0], int):
+                        other_pos = new_pos_containers[other_container][0]
+                        if other_pos[0] > pos[0]:
+                            cond = False
+            if cond:
+                possible_discharged.append(container)
+    new_node_list = []
+    for element in possible_discharged:
+        # new_pos_containers = node.value.pos_containers.copy()
+        container = new_pos_containers[element]
+        container_height = len(MAP) - container[0][0]
+        new_pos_containers[element] = [node.value.port,container[1],container[2]]
+        new_node = Node(new_pos_containers, node.value.port)
+        new_node.cost = node.cost + 15 + 2 * container_height
+        new_node.heur = same_height_heuristic(new_node)
+        new_node.parent = node
+        new_node_list.append(new_node)
+    return new_node_list
 
 
 def cargar(node,container):
@@ -156,7 +163,6 @@ def cargar(node,container):
         new_node = Node(new_pos_containers,node.value.port)
 
         new_node.cost = node.cost + 10 + (len(MAP) - new_pos[0])
-        print(new_node.value)
         new_node.heur = same_height_heuristic(new_node)
         new_node.parent = node
         new_node_list.append(new_node)
@@ -171,7 +177,8 @@ def set_container(pos_containers):
     available_pos = []
     for element in pos_containers:
         pos_cont = pos_containers[element]
-        map[pos_cont[0]][pos_cont[1]] = "F"
+        if isinstance(pos_cont[0],tuple):
+            map[pos_cont[0][0]][pos_cont[0][1]] = "F"
     for i in range(len(map)-1, -1, -1):
         for j in range(len(map[0])-1, -1, -1):
             element = map[i][j]
@@ -179,21 +186,28 @@ def set_container(pos_containers):
                 available_pos.append([i-1, j])
     return available_pos
 
+def containers_in_boat(pos_containers):
+    for container in pos_containers:
+        if not isinstance(pos_containers[container][0],int):
+            return True
+    return False
 
+def no_containers_in_port(node):
+    pos_containers = node.value.pos_containers
+    for container in pos_containers:
+        if isinstance(pos_containers[container][0],int):
+            if (pos_containers[container][0] == node.value.port and pos_containers[container][0] != pos_containers[container][1]):
+                return False
+        else:
+            if (pos_containers[container][1] == node.value.port):
+                return False
+    return True
 
 def same_height_heuristic(node):
     # No hay coste adicional por altura
     heur = 0
     # Buscamos hasta que puerto tendremos que ir para los costes de navegación
-    max_port = 0
     # En este caso los node.value tienen la estrcutura de [id,tipo,puerto]
-    """containers_list = PORTS[node.value.port]
-    aux_node = containers_list.head
-    if aux_node:
-        while aux_node.next:
-            if int(aux_node.value[2]) > max_port:
-                max_port = int(aux_node.value[2])
-            aux_node = aux_node.next"""
     max_port = 0
     # Cargamos todos los contenedores con su coste
     for container in node.value.pos_containers:
@@ -205,8 +219,9 @@ def same_height_heuristic(node):
         if (node.value.pos_containers[container][0] != node.value.pos_containers[container][1]):
             if node.value.pos_containers[container][1] > max_port:
                 max_port = node.value.pos_containers[container][1]
-    max_port = max_port-node.value.port
-    heur += max_port*3500
+    if max_port != 0:
+        max_port = max_port-node.value.port
+        heur += max_port*3500
     return heur
 
 
