@@ -176,7 +176,7 @@ print_data()
 problem.addConstraint(AllDifferentConstraint(), container_id_list)
 problem.addConstraint(not_floating,container_id_list)
 soluciones = problem.getSolutions()
-file = open("./CSP-tests/"+sys.argv[2]+"-"+sys.argv[3]+".output", "w")
+file = open("./CSP-tests/"+sys.argv[2]+"-"+sys.argv[3]+".output", "w+")
 if len(soluciones) != 0:
 	problem.addConstraint(not_reorganizing,container_id_list)
 	soluciones2 = problem.getSolutions()

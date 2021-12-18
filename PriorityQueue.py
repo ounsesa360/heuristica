@@ -1,11 +1,12 @@
 class Node:
-    def __init__(self, heur=None,cost=None,state=None):
+    def __init__(self, heur=None,cost=None,state=None, parent = None):
         self.next = None
         self.prev = None
         self.heur = heur
         self.cost = cost
         self.value = self.heur + self.cost
         self.state = state
+        self.parent = parent
 
 class State:
 
@@ -30,10 +31,10 @@ class PriorityQueue:
 
 
     def add_item(self, element):
-        new_node = Node(element.heur,element.cost,element.value)
+        new_node = Node(element.heur,element.cost,element.value, element.parent)
         if self.head is None:
             self.head = new_node
-            self.tail = new_node ##############dudoso
+            self.tail = new_node
             self.len += 1
         else:
             node = self.head

@@ -20,7 +20,7 @@ class DoubleLinkList:
         return res
 
     def add_item(self, element):
-        new_node = Node(element)
+        new_node = Node(element.state)
         if self.head is None:
             self.head = new_node
             self.tail = new_node
@@ -30,6 +30,17 @@ class DoubleLinkList:
             self.tail = new_node
         self.len += 1
         return
+
+    def find_item(self,element):
+        aux_node = self.head
+        if aux_node is None:
+            return False
+        while aux_node.next:
+            if aux_node.value.pos_containers == element.state.pos_containers and aux_node.value.port == element.state.port:
+                return True
+            aux_node = aux_node.next
+        return False
+
 
     def remove_first(self):
         if self.head is None:
