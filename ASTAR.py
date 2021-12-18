@@ -110,9 +110,6 @@ def get_children(node):
 
 def navegar(node):
     # Que no pueda navegar si tiene contenedores que dejar en ese puerto
-    for container in node.value.pos_containers:
-        if node.value.pos_containers[container][2] == node.value.port:
-            return []
     new_node = Node(node.value.pos_containers,node.value.port + 1)
     new_node.cost = node.cost + 3500
     new_node.heur = same_height_heuristic(new_node)
@@ -131,13 +128,14 @@ def descargar(node):
                 if other_container != container:
                     if not isinstance(new_pos_containers[other_container][0], int):
                         other_pos = new_pos_containers[other_container][0]
-                        if other_pos[0] > pos[0]:
-                            cond = False
+                        if other_pos[1] == pos[1]:
+                            if other_pos[0] < pos[0]:
+                                cond = False
             if cond:
                 possible_discharged.append(container)
     new_node_list = []
     for element in possible_discharged:
-        # new_pos_containers = node.value.pos_containers.copy()
+        new_pos_containers = node.value.pos_containers.copy()
         container = new_pos_containers[element]
         container_height = len(MAP) - container[0][0]
         new_pos_containers[element] = [node.value.port,container[1],container[2]]
@@ -152,7 +150,8 @@ def descargar(node):
 def cargar(node,container):
     # Añadimos al Node.pos_containers el container colocado
     new_pos_containers = node.value.pos_containers.copy()
-    available_pos_list = set_container(new_pos_containers) #################
+    container_type = new_pos_containers[container][2]
+    available_pos_list = set_container(new_pos_containers,container_type)
     new_node_list = []
     for new_pos in available_pos_list:
         new_pos_containers = node.value.pos_containers.copy()
@@ -171,19 +170,23 @@ def cargar(node,container):
     return new_node_list
 
 
-
-def set_container(pos_containers):
-    map = MAP
+def set_container(pos_containers, container_type):
     available_pos = []
+    map = convert_position_matrix(get_map(sys.argv[1], sys.argv[2]))
+    # Marcamos los contenedores que ya están colocados como suelo para poder colocar encima
     for element in pos_containers:
         pos_cont = pos_containers[element]
         if isinstance(pos_cont[0],tuple):
             map[pos_cont[0][0]][pos_cont[0][1]] = "F"
+    # Buscamos las posiciones donde se puedan colocar
     for i in range(len(map)-1, -1, -1):
         for j in range(len(map[0])-1, -1, -1):
-            element = map[i][j]
-            if element == "F" and map[i - 1][j] != "F" and map[i - 1][j] != "X":
-                available_pos.append([i-1, j])
+            if map[i - 1][j] != "X" and map[i - 1][j] != "F":
+                element = map[i][j]
+                if element == "F":
+                    if map[i - 1][j] != "E" and container_type == "E":
+                        continue
+                    available_pos.append([i-1, j])
     return available_pos
 
 def containers_in_boat(pos_containers):
@@ -196,10 +199,10 @@ def no_containers_in_port(node):
     pos_containers = node.value.pos_containers
     for container in pos_containers:
         if isinstance(pos_containers[container][0],int):
-            if (pos_containers[container][0] == node.value.port and pos_containers[container][0] != pos_containers[container][1]):
+            if pos_containers[container][0] != pos_containers[container][1]:
                 return False
         else:
-            if (pos_containers[container][1] == node.value.port):
+            if pos_containers[container][1] == node.value.port:
                 return False
     return True
 
