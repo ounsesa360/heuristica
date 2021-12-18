@@ -1,7 +1,6 @@
 from DoubleLinkedList import DoubleLinkList
 from PriorityQueue import PriorityQueue
 import sys
-
 global MAP
 global INITIAL_PORT
 global PORTS
@@ -43,7 +42,13 @@ class ASTAR:
         self.node_list = PriorityQueue()
         self.heuristic = heuristic
         self.current = Node(initial_config)
-        self.current.heur = same_height_heuristic(self.current)
+        if heuristic == "same_height_heuristic":
+            self.current.heur = same_height_heuristic(self.current)
+        elif heuristic == "no_charging_cost_heuristic":
+            self.current.heur = no_charging_cost_heuristic(self.current)
+        else:
+            self.current.heur = None
+
         self.search()
 
     def search(self):
@@ -79,6 +84,7 @@ def get_possible_charged(node):
             possible.append(container)
     return possible
 
+
 def get_children(node):
     new_node_list = []
     expanded_nodes = 0
@@ -108,9 +114,10 @@ def get_children(node):
     expanded_nodes += len(new_node_list)
     return new_node_list
 
+
 def navegar(node):
     # Que no pueda navegar si tiene contenedores que dejar en ese puerto
-    new_node = Node(node.value.pos_containers,node.value.port + 1)
+    new_node = Node(node.value.pos_containers, node.value.port + 1)
     new_node.cost = node.cost + 3500
     new_node.heur = same_height_heuristic(new_node)
     new_node.parent = node
@@ -138,7 +145,7 @@ def descargar(node):
         new_pos_containers = node.value.pos_containers.copy()
         container = new_pos_containers[element]
         container_height = len(MAP) - container[0][0]
-        new_pos_containers[element] = [node.value.port,container[1],container[2]]
+        new_pos_containers[element] = [node.value.port, container[1], container[2]]
         new_node = Node(new_pos_containers, node.value.port)
         new_node.cost = node.cost + 15 + 2 * container_height
         new_node.heur = same_height_heuristic(new_node)
@@ -156,10 +163,10 @@ def cargar(node,container):
     for new_pos in available_pos_list:
         new_pos_containers = node.value.pos_containers.copy()
         new_loc = tuple(new_pos)
-        new_state = [new_loc, node.value.pos_containers[container][1],node.value.pos_containers[container][2]]
+        new_state = [new_loc, node.value.pos_containers[container][1], node.value.pos_containers[container][2]]
         new_pos_containers[container] = new_state
         # Creamos un nuevo nodo con los valores del antiguo nodo + nuevo
-        new_node = Node(new_pos_containers,node.value.port)
+        new_node = Node(new_pos_containers, node.value.port)
 
         new_node.cost = node.cost + 10 + (len(MAP) - new_pos[0])
         new_node.heur = same_height_heuristic(new_node)
@@ -189,22 +196,25 @@ def set_container(pos_containers, container_type):
                     available_pos.append([i-1, j])
     return available_pos
 
+
 def containers_in_boat(pos_containers):
     for container in pos_containers:
-        if not isinstance(pos_containers[container][0],int):
+        if not isinstance(pos_containers[container][0], int):
             return True
     return False
+
 
 def no_containers_in_port(node):
     pos_containers = node.value.pos_containers
     for container in pos_containers:
-        if isinstance(pos_containers[container][0],int):
+        if isinstance(pos_containers[container][0], int):
             if pos_containers[container][0] != pos_containers[container][1]:
                 return False
         else:
             if pos_containers[container][1] == node.value.port:
                 return False
     return True
+
 
 def same_height_heuristic(node):
     # No hay coste adicional por altura
@@ -214,7 +224,7 @@ def same_height_heuristic(node):
     max_port = 0
     # Cargamos todos los contenedores con su coste
     for container in node.value.pos_containers:
-        if (isinstance(node.value.pos_containers[container][0],int)):
+        if (isinstance(node.value.pos_containers[container][0], int)):
             if (node.value.pos_containers[container][0] == 0) or (node.value.pos_containers[container][0] == 1 and node.value.pos_containers[container][1] == 2):
                 heur += 25
         else:
@@ -238,20 +248,22 @@ def no_charging_cost_heuristic(node):
             max_port = node.value.port
         # Obtenemos la altura de cada contenedor para calcular el coste que supondría descargarlo
         # Importante, posiblemente haya que calcular el coste de descarga de todos los container que no están en su puero tambien
-        height = len(MAP) - node.state.pos_containers[key][0]
+        height = len(MAP) - node.value.pos_containers[key][0]
         discharge_cost = 15 + 2 * height
         value += discharge_cost
     navigation_costs = (max_port - node.value.port) * 3500
     value += navigation_costs
     return value
 
+
 def get_initial_configuration(containers_list):
     init_config = {}
     for container in containers_list:
         # Tenemos un diccionario del tipo {id:[posicion,puerto_destino,tipo]}
         # Donde posicion es su posicion en el barco o en qué puerto está
-        init_config[int(container[0])] = [0,int(container[2]),container[1]]
+        init_config[int(container[0])] = [0, int(container[2]), container[1]]
     return init_config
+
 
 def get_map(path, map_name):
     # Creamos una matriz para el mapa
@@ -270,6 +282,7 @@ def get_map(path, map_name):
             map.append(map_list)
     # Devolvemos la matriz
     return map
+
 
 def get_pos_containers(map):
     pos_containers = {}
@@ -296,6 +309,7 @@ def get_containers(path, containers_name):
             container_list.append(containers)
     return container_list
 
+
 def convert_position_matrix(position_matrix):
     for i in range(len(position_matrix)-1, -1, -1):
         for j in range(len(position_matrix[0])-1, -1, -1):
@@ -309,7 +323,7 @@ def convert_position_matrix(position_matrix):
                     position_matrix[k][j] = "X"
     return position_matrix
 
-map = get_map(sys.argv[1],sys.argv[2])
+map = get_map(sys.argv[1], sys.argv[2])
 modified_map = convert_position_matrix(map)
 MAP = modified_map
 initial_port = DoubleLinkList()
@@ -322,6 +336,6 @@ first_port = DoubleLinkList()
 second_port = DoubleLinkList()
 PORTS = [initial_port, first_port, second_port]
 
-sol = ASTAR(1,initial_config)
+sol = ASTAR("no_charging_cost_heuristic", initial_config)
 
 
